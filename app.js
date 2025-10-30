@@ -103,12 +103,24 @@ function generateQuestions() {
 function calculateScoresAndPercentages() {
     const scores = {};
     const percentages = {};
+    const responses = [];
 
     // Calculate item counts per subdimension
     const allSubcategories = Object.values(categories).flat();
     const itemCounts = {};
     allSubcategories.forEach(subcat => {
         itemCounts[subcat] = questionsData.filter(q => q.dimension === subcat).length;
+    });
+
+    // Get the profession map
+    const container = document.getElementById('questions-container');
+    const questionDivs = container.querySelectorAll('.question');
+    const professionsMap = {};
+    questionDivs.forEach((div, index) => {
+        const professionSpan = div.querySelector('.profession');
+        if (professionSpan) {
+            professionsMap[index] = professionSpan.textContent;
+        }
     });
 
     // Sub-dimensions
@@ -119,7 +131,19 @@ function calculateScoresAndPercentages() {
             const radios = document.querySelectorAll(`input[name^="q-${subcat}-"]:checked`);
             let totalSub = 0;
             radios.forEach(radio => {
-                totalSub += scoreMap[radio.value];
+                const value = radio.value;
+                const name = radio.name;
+                const match = name.match(/q-(\w+)-(\d+)/);
+                if (match) {
+                    const index = parseInt(match[2]);
+                    const profession = professionsMap[index];
+                    responses.push({
+                        profession: profession,
+                        dimension: subcat,
+                        value: scoreMap[value]
+                    });
+                    totalSub += scoreMap[value];
+                }
             });
             scores[subcat] = totalSub;
             const maxSub = itemCounts[subcat] * 4;
@@ -132,7 +156,10 @@ function calculateScoresAndPercentages() {
         percentages[category] = Math.round((totalMain / maxScoreMain) * 10000) / 100;
     }
 
-    return { scores, percentages };
+    // Sort responses by profession for consistent order
+    responses.sort((a, b) => a.profession.localeCompare(b.profession));
+
+    return { scores, percentages, responses };
 }
 
 // Display results
@@ -201,7 +228,7 @@ function displayResults(percentages) {
 }
 
 // Save to Supabase
-async function saveResults(scores, percentages, age, sex) {
+async function saveResults(scores, percentages, age, sex, responses) {
     try {
         const { data, error } = await supabaseClient
             .from('riasec_results')
@@ -210,6 +237,7 @@ async function saveResults(scores, percentages, age, sex) {
                     timestamp: new Date().toISOString(),
                     scores: JSON.stringify(scores),
                     percentages: JSON.stringify(percentages),
+                    responses: JSON.stringify(responses),
                     age: parseInt(age),
                     sex: sex
                 }
@@ -276,9 +304,9 @@ async function handleSubmit() {
         return;
     }
 
-    const { scores, percentages } = calculateScoresAndPercentages();
+    const { scores, percentages, responses } = calculateScoresAndPercentages();
     displayResults(percentages);
-    await saveResults(scores, percentages, age, sex);
+    await saveResults(scores, percentages, age, sex, responses);
 }
 
 // Fill random for testing
