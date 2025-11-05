@@ -163,9 +163,16 @@ function calculateScoresAndPercentages() {
 }
 
 // Display results
-function displayResults(percentages) {
+function displayResults(percentages, password = null) {
     const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '<h2>Résultats</h2>';
+    let passwordDisplay = '';
+    if (password) {
+        passwordDisplay = `<div class="password-info" style="background-color: #e8f5e8; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #4CAF50;">
+            <strong>Mot de passe pour récupérer ces résultats :</strong> <code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${password}</code>
+            <br><small style="color: #666;">Conservez ce mot de passe pour accéder à ces résultats ultérieurement.</small>
+        </div>`;
+    }
+    resultsDiv.innerHTML = '<h2>Résultats</h2>' + passwordDisplay;
 
     // Get the profession for each question from the original shuffled order
     const container = document.getElementById('questions-container');
@@ -312,8 +319,14 @@ function displayResults(percentages) {
     }, 100);
 }
 
+// Generate a random password for result retrieval
+function generatePassword() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
 // Save to Supabase
-async function saveResults(scores, percentages, age, sex, responses) {
+async function saveResults(scores, percentages, age, sex, responses, prenom = null) {
+    const password = generatePassword();
     try {
         const { data, error } = await supabaseClient
             .from('riasec_results')
@@ -324,14 +337,18 @@ async function saveResults(scores, percentages, age, sex, responses) {
                     percentages: JSON.stringify(percentages),
                     responses: JSON.stringify(responses),
                     age: parseInt(age),
-                    sex: sex
+                    sex: sex,
+                    prenom: prenom || null,
+                    password: password
                 }
             ]);
         if (error) throw error;
         console.log('Results saved successfully');
+        return password; // Return the password for display
     } catch (error) {
         console.error('Error saving results:', error);
         // In a real app, handle errors gracefully
+        return null;
     }
 }
 
@@ -382,6 +399,7 @@ async function handleSubmit() {
         return;
     }
 
+    const prenom = document.getElementById('prenom').value.trim();
     const age = document.getElementById('age').value;
     const sex = document.getElementById('sex').value;
     if (!age || !sex) {
@@ -390,8 +408,8 @@ async function handleSubmit() {
     }
 
     const { scores, percentages, responses } = calculateScoresAndPercentages();
-    displayResults(percentages);
-    await saveResults(scores, percentages, age, sex, responses);
+    const password = await saveResults(scores, percentages, age, sex, responses, prenom);
+    displayResults(percentages, password);
 }
 
 // Fill random for testing
@@ -418,9 +436,303 @@ function resetForm() {
     document.getElementById('submit-btn').style.display = 'none'; // Hide submit button
     document.getElementById('participant-info').style.display = 'none'; // Hide participant info
     document.getElementById('results').innerHTML = ''; // Clear results
+    document.getElementById('prenom').value = ''; // Clear prenom
     document.getElementById('age').value = ''; // Clear age
     document.getElementById('sex').value = ''; // Clear sex
     generateQuestions(); // Regenerate questions with new order
+}
+
+// Retrieve results from Supabase using password
+async function retrieveResults() {
+    const password = prompt('Entrez votre mot de passe pour récupérer les résultats :');
+    if (!password) return;
+
+    // Check for admin mode
+    if (password === 'coP1') {
+        await showAdminMode();
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('riasec_results')
+            .select('*')
+            .eq('password', password)
+            .single();
+
+        if (error || !data) {
+            alert('Mot de passe incorrect ou résultats non trouvés.');
+            return;
+        }
+
+        // Parse the stored data
+        const percentages = JSON.parse(data.percentages);
+        const responses = JSON.parse(data.responses);
+        const prenom = data.prenom;
+        const age = data.age;
+        const sex = data.sex;
+
+        // Clear current content and display retrieved results
+        document.getElementById('questions-container').innerHTML = '';
+        document.getElementById('participant-info').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'none';
+
+        // Display retrieved results with participant info
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+            <h2>Résultats récupérés</h2>
+            <div class="participant-summary" style="background-color: #f0f8ff; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #4CAF50;">
+                <strong>Informations du participant :</strong>
+                ${prenom ? `<br>Prénom : ${prenom}` : ''}
+                <br>Âge : ${age} ans
+                <br>Sexe : ${sex}
+                <br>Date : ${new Date(data.timestamp).toLocaleDateString('fr-FR')}
+            </div>
+        `;
+
+        displayRetrievedResults(percentages, responses);
+
+    } catch (error) {
+        console.error('Error retrieving results:', error);
+        alert('Erreur lors de la récupération des résultats.');
+    }
+}
+
+// Show admin mode with list of all submissions
+async function showAdminMode() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('riasec_results')
+            .select('prenom, age, sex, timestamp, password')
+            .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
+        // Clear current content
+        document.getElementById('questions-container').innerHTML = '';
+        document.getElementById('participant-info').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'none';
+
+        // Display admin interface
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+            <h2>Mode Administrateur</h2>
+            <p style="color: #666; margin-bottom: 20px;">Liste de toutes les passations enregistrées :</p>
+            <div class="admin-list" style="max-height: 600px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+        `;
+
+        if (data && data.length > 0) {
+            data.forEach((submission, index) => {
+                const date = new Date(submission.timestamp).toLocaleDateString('fr-FR');
+                const time = new Date(submission.timestamp).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                resultsDiv.innerHTML += `
+                    <div class="admin-item" style="padding: 10px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9; cursor: pointer;" onclick="retrieveAdminResult('${submission.password}')">
+                        <strong>${index + 1}. ${submission.prenom || 'Anonyme'}</strong> -
+                        ${submission.age} ans, ${submission.sex} -
+                        ${date} ${time} -
+                        <code style="background-color: #e8f5e8; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${submission.password}</code>
+                    </div>
+                `;
+            });
+        } else {
+            resultsDiv.innerHTML += '<p style="text-align: center; color: #666;">Aucune passation trouvée.</p>';
+        }
+
+        resultsDiv.innerHTML += `
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="resetForm()" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Retour au questionnaire</button>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error('Error loading admin mode:', error);
+        alert('Erreur lors du chargement du mode administrateur.');
+    }
+}
+
+// Retrieve specific result from admin mode
+async function retrieveAdminResult(password) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('riasec_results')
+            .select('*')
+            .eq('password', password)
+            .single();
+
+        if (error || !data) {
+            alert('Erreur lors de la récupération de cette passation.');
+            return;
+        }
+
+        // Parse the stored data
+        const percentages = JSON.parse(data.percentages);
+        const responses = JSON.parse(data.responses);
+        const prenom = data.prenom;
+        const age = data.age;
+        const sex = data.sex;
+
+        // Display retrieved results with participant info
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+            <h2>Résultats de la passation</h2>
+            <div class="participant-summary" style="background-color: #f0f8ff; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #4CAF50;">
+                <strong>Informations du participant :</strong>
+                ${prenom ? `<br>Prénom : ${prenom}` : ''}
+                <br>Âge : ${age} ans
+                <br>Sexe : ${sex}
+                <br>Date : ${new Date(data.timestamp).toLocaleDateString('fr-FR')}
+                <br>Mot de passe : <code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${password}</code>
+            </div>
+            <div style="margin-bottom: 20px; text-align: center;">
+                <button onclick="showAdminMode()" style="padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">Retour à la liste</button>
+            </div>
+        `;
+
+        displayRetrievedResults(percentages, responses);
+
+    } catch (error) {
+        console.error('Error retrieving admin result:', error);
+        alert('Erreur lors de la récupération des résultats.');
+    }
+}
+
+// Display retrieved results with professions from stored responses
+function displayRetrievedResults(percentages, responses) {
+    const resultsDiv = document.getElementById('results');
+
+    // Recalculate excellent professions from stored responses
+    const excellentProfessions = {};
+    Object.keys(categories).forEach(category => {
+        excellentProfessions[category] = [];
+    });
+
+    // Process responses to find ++ answers
+    responses.forEach(response => {
+        if (response.value === 4) { // ++ corresponds to value 4
+            // Find the main category for this sub-dimension
+            const mainCategory = Object.keys(categories).find(cat =>
+                categories[cat].includes(response.dimension)
+            );
+            if (mainCategory && excellentProfessions[mainCategory]) {
+                excellentProfessions[mainCategory].push(response.profession);
+            }
+        }
+    });
+
+    // Display all categories in original order with main details only
+    for (const [category, subcats] of Object.entries(categories)) {
+        let profs = '';
+        if (excellentProfessions[category] && excellentProfessions[category].length > 0) {
+            profs = '<p>Métiers appréciés : ' + excellentProfessions[category].join(', ') + '</p>';
+        }
+        resultsDiv.innerHTML += `
+            <div class="category-results">
+                <h3>${category.toUpperCase()} (${percentages[category]}%) - ${descriptions[category]}</h3>
+                ${profs}
+            </div>
+        `;
+    }
+
+    // Sort categories by percentage descending for top 3 summary
+    const sortedCategories = Object.keys(percentages)
+        .filter(key => key in descriptions)
+        .sort((a, b) => percentages[b] - percentages[a])
+        .slice(0, 3);
+
+    const dominantProfile = sortedCategories.map(cat => cat.toUpperCase()).join(' ');
+    resultsDiv.innerHTML += `<h3>Profil RIASEC dominant: ${dominantProfile}</h3>`;
+
+    // Add radar chart
+    resultsDiv.innerHTML += `
+        <div class="radar-chart-container" style="text-align: center; margin: 20px 0;">
+            <div style="position: relative; display: inline-block;">
+                <img src="RIASEC Plan de travail 1.svg" alt="RIASEC Background" style="position: absolute; top: 0; left: 0; width: 400px; height: 400px; opacity: 0.5; z-index: 1; pointer-events: none;">
+                <canvas id="riasecRadarChart" width="400" height="400" style="position: relative; z-index: 2;"></canvas>
+            </div>
+        </div>
+    `;
+
+    // Create radar chart after DOM update
+    setTimeout(() => {
+        const ctx = document.getElementById('riasecRadarChart').getContext('2d');
+        const riasecData = ['R', 'I', 'A', 'S', 'E', 'C'].map(cat => percentages[cat.toLowerCase()] || 0);
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['', '', '', '', '', ''],
+                datasets: [{
+                    data: riasecData,
+                    borderColor: 'rgba(0, 0, 0, 1)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(0, 0, 0, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(0, 0, 0, 1)'
+                }]
+            },
+            options: {
+                responsive: false, // Fixed size
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            color: 'rgba(0, 0, 0, 0.8)',
+                            font: {
+                                size: 10
+                            },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.3)',
+                            lineWidth: 1
+                        },
+                        angleLines: {
+                            display: false // Hide angle lines from center to points
+                        },
+                        pointLabels: {
+                            color: 'rgba(0, 0, 0, 0.8)',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.r + '%';
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0 // Straight lines between points
+                    }
+                }
+            }
+        });
+    }, 100);
 }
 
 // Hide submit button initially and add click listener to RIASEC image
@@ -429,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     generateQuestions();
     document.getElementById('fill-random').addEventListener('click', fillRandom);
     document.getElementById('reset-btn').addEventListener('click', resetForm);
+    document.getElementById('retrieve-btn').addEventListener('click', retrieveResults);
 
     // Show test button only when RIASEC image is clicked
     const riasecImage = document.querySelector('.riasec-image');

@@ -12,10 +12,11 @@
     <div class="container">
         <div class="header">
             <img src="RIASEC Plan de travail 1.svg" alt="RIASEC Plan de travail" class="riasec-image">
-            <h1>Test d'Intérêt Professionnel RIASEC</h1>
+            <h1>Test d'Intérêts Professionnels RIASEC</h1>
         </div>
         <button id="fill-random" style="display: none;">Remplir Aléatoirement (Mode Test)</button>
         <button id="reset-btn">Réinitialiser</button>
+        <button id="retrieve-btn">Récupérer Résultats</button>
         <p>Répondez à chaque question en indiquant votre niveau d'intérêt :</p>
         <ul>
             <li>-- : Pas du tout envie (0 point)</li>
@@ -31,6 +32,9 @@
 
             <div class="participant-info" id="participant-info" style="display: none;">
                 <h3>Informations sur le participant</h3>
+                <label for="prenom">Prénom (optionnel):</label>
+                <input type="text" id="prenom" maxlength="50">
+
                 <label for="age">Âge:</label>
                 <input type="number" id="age" min="1" max="120" required>
 
