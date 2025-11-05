@@ -6,11 +6,15 @@
     <title>Questionnaire RIASEC</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Test d'Intérêt Professionnel RIASEC</h1>
-        <button id="fill-random">Remplir Aléatoirement (Mode Test)</button>
+        <div class="header">
+            <img src="RIASEC Plan de travail 1.svg" alt="RIASEC Plan de travail" class="riasec-image">
+            <h1>Test d'Intérêt Professionnel RIASEC</h1>
+        </div>
+        <button id="fill-random" style="display: none;">Remplir Aléatoirement (Mode Test)</button>
         <button id="reset-btn">Réinitialiser</button>
         <p>Répondez à chaque question en indiquant votre niveau d'intérêt :</p>
         <ul>
