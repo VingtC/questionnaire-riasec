@@ -231,6 +231,11 @@ function displayResults(percentages, password = null) {
     const dominantProfile = sortedCategories.map(cat => cat.toUpperCase()).join(' ');
     resultsDiv.innerHTML += `<h3>Profil RIASEC dominant: ${dominantProfile}</h3>`;
 
+    // Add message for psyEN accompaniment
+    resultsDiv.innerHTML += `<p style="background-color: #fff3cd; padding: 15px; border-radius: 4px; border: 1px solid #ffeaa7; margin: 20px 0; font-weight: bold; color: #856404;">
+        Pour une interprétation approfondie de vos résultats et pour connaître les formations et métiers associés à votre profil, nous vous invitons à vous faire accompagner par un psyEN.
+    </p>`;
+
     // Add radar chart
     resultsDiv.innerHTML += `
         <div class="radar-chart-container" style="text-align: center; margin: 20px 0;">
@@ -646,6 +651,11 @@ function displayRetrievedResults(percentages, responses) {
 
     const dominantProfile = sortedCategories.map(cat => cat.toUpperCase()).join(' ');
     resultsDiv.innerHTML += `<h3>Profil RIASEC dominant: ${dominantProfile}</h3>`;
+
+    // Add message for psyEN accompaniment
+    resultsDiv.innerHTML += `<p style="background-color: #fff3cd; padding: 15px; border-radius: 4px; border: 1px solid #ffeaa7; margin: 20px 0; font-weight: bold; color: #856404;">
+        Pour une interprétation approfondie de vos résultats et pour connaître les formations et métiers associés à votre profil, nous vous invitons à vous faire accompagner par un psyEN.
+    </p>`;
 
     // Add radar chart
     resultsDiv.innerHTML += `
