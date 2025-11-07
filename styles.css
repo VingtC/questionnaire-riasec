@@ -8,6 +8,7 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
+    margin-top: 140px; /* Space for header (100px) + progress (40px) */
     padding: 20px;
     background-color: white;
     border-radius: 8px;
@@ -15,10 +16,46 @@ body {
 }
 
 .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 20px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1001;
+}
+
+.progress-container {
+    position: fixed;
+    top: 100px; /* Below header */
+    left: 0;
+    right: 0;
+    background-color: white;
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    border-bottom: 1px solid #ddd;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 16px;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 8px;
 }
 
 .riasec-image {
