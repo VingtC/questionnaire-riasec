@@ -481,6 +481,9 @@ function displayResults(percentages, password = null) {
                 <button onclick="openRIASECExplorer('metiers')" style="background-color: #fd7e14; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
                     💼 Métiers correspondants
                 </button>
+                <button onclick="openRIASECExplorer('analyse')" style="background-color: #17a2b8; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
+                    📊 Analyse des scores - Échelle RIASEC
+                </button>
             </div>
         </div>
     `;
@@ -942,6 +945,9 @@ function displayRetrievedResults(percentages, responses) {
                 <button onclick="openRIASECExplorer('metiers')" style="background-color: #fd7e14; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
                     💼 Métiers correspondants
                 </button>
+                <button onclick="openRIASECExplorer('analyse')" style="background-color: #17a2b8; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
+                    📊 Analyse des scores - Échelle RIASEC
+                </button>
             </div>
         </div>
     `;
@@ -1052,6 +1058,10 @@ function openRIASECExplorer(type) {
             break;
         case 'metiers':
             url = `https://vingtc.github.io/RIASEC-m-tiers/#${dominantProfile}`;
+            break;
+        case 'analyse':
+            const scores = ['r', 'i', 'a', 's', 'e', 'c'].map(cat => `${cat}=${Math.round(currentPercentages[cat])}`).join('&');
+            url = `https://vingtc.github.io/riasec-chelles/?${scores}&scale=Riatest&max=100`;
             break;
         default:
             return;
