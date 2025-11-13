@@ -303,6 +303,19 @@ function generateQuestions() {
             });
         });
     });
+
+    // Add event listeners to all radio buttons to re-enable submit button when answers change
+    const allRadios = container.querySelectorAll('input[type="radio"]');
+    allRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn.disabled) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Soumettre et Calculer Résultats';
+                submitBtn.style.backgroundColor = '';
+            }
+        });
+    });
 }
 
 // Calculate scores and percentages
@@ -646,17 +659,36 @@ async function handleSubmit() {
         return;
     }
 
+    // Disable the submit button immediately to prevent multiple submissions
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Calcul en cours...';
+    submitBtn.style.backgroundColor = '#ccc';
+
     const prenom = document.getElementById('prenom').value.trim();
     const age = document.getElementById('age').value;
     const sex = document.getElementById('sex').value;
     if (!age || !sex) {
         alert('Veuillez renseigner l\'âge et le sexe.');
+        // Re-enable button if validation fails
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Soumettre et Calculer Résultats';
+        submitBtn.style.backgroundColor = '';
         return;
     }
 
-    const { scores, percentages, responses } = calculateScoresAndPercentages();
-    const password = await saveResults(scores, percentages, age, sex, responses, prenom);
-    displayResults(percentages, password);
+    try {
+        const { scores, percentages, responses } = calculateScoresAndPercentages();
+        const password = await saveResults(scores, percentages, age, sex, responses, prenom);
+        displayResults(percentages, password);
+    } catch (error) {
+        console.error('Erreur lors de la soumission:', error);
+        alert('Une erreur est survenue. Veuillez réessayer.');
+        // Re-enable button on error
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Soumettre et Calculer Résultats';
+        submitBtn.style.backgroundColor = '';
+    }
 }
 
 // Fill random for testing
