@@ -483,7 +483,7 @@ function displayResults(percentages, password = null) {
             </p>
             <div class="search-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
                 <button onclick="openRIASECExplorer('bac')" style="background-color: #007bff; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
-                    🎓 Bac Pro & CAP - Académie de Paris
+                    🎓 Formations des lycées de Paris
                 </button>
                 <button onclick="openRIASECExplorer('parcoursup')" style="background-color: #28a745; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 0.3s;">
                     🎓 Formations Supérieures - Parcoursup
@@ -626,14 +626,14 @@ function validateForm() {
         // Highlight unanswered questions in red
         const questions = document.querySelectorAll('#questions-container .question');
         const answered = new Set();
-        checkedRadios.forEach(radio => {
-            const name = radio.name;
-            const match = name.match(/q-(\w+-\w+)-(\d+)/);
-            if (match) {
-                const questionIndex = parseInt(match[2]);
-                answered.add(questionIndex);
-            }
-        });
+    checkedRadios.forEach(radio => {
+        const name = radio.name;
+        const match = name.match(/q-(\w+)-(\d+)/);
+        if (match) {
+            const questionIndex = parseInt(match[2]);
+            answered.add(questionIndex);
+        }
+    });
 
         questions.forEach((question, shuffledIndex) => {
             if (!answered.has(shuffledIndex)) {
